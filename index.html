@@ -10,15 +10,17 @@
     <button data-tab="settings">Settings</button>
     <button data-tab="projections">Projections</button>
     <button data-tab="draft">Draft</button>
+    <button data-tab="rosters">Rosters</button>
   </nav>
 
     <section id="settings" class="tab">
       <h2>League Settings</h2>
       <div class="row">
-      <label>Teams: <input id="teams" type="number" value="10" min="1"/></label>
-      <label>Budget per Team: <input id="budget" type="number" value="200" min="1"/></label>
-      <label>Season: <input id="season" type="number" value="2025" min="1900"/></label>
+        <label>Teams: <input id="teams" type="number" value="10" min="1"/></label>
+        <label>Budget per Team: <input id="budget" type="number" value="200" min="1"/></label>
+        <label>Season: <input id="season" type="number" value="2025" min="1900"/></label>
       </div>
+      <label>Team Names (comma separated): <input id="team-names" type="text" /></label>
       <h3>Scoring Weights</h3>
       <div id="weights"></div>
       <button id="apply">Apply Settings</button>
@@ -26,6 +28,11 @@
 
   <section id="projections" class="tab" hidden>
     <h2>Player Projections</h2>
+    <div id="projection-filters" class="filters">
+      <input id="filter-name" placeholder="Search player" />
+      <select id="filter-team"></select>
+      <select id="filter-pos"></select>
+    </div>
     <table id="projections-table">
       <thead>
         <tr>
@@ -42,12 +49,17 @@
     <table id="draft-table">
       <thead>
         <tr>
-          <th>Player</th><th>FPPG</th><th>PAR</th><th>Value ($)</th><th></th>
+          <th>Player</th><th>FPPG</th><th>PAR</th><th>Value ($)</th><th>Team</th><th>Bid</th><th></th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
     <div id="budget-info"></div>
+  </section>
+
+  <section id="rosters" class="tab" hidden>
+    <h2>Team Rosters</h2>
+    <div id="roster-list"></div>
   </section>
 
   <script src="script.js"></script>
