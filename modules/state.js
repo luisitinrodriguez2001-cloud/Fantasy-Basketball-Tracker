@@ -1,4 +1,5 @@
 import { defaultWeights } from './design-system.js';
+import { fppg } from './scoring.js';
 
 export const state = {
   players: [],
@@ -10,8 +11,49 @@ export const state = {
   spent: 0,
   teamNames: [],
   rosters: [],
-  weights: { ...defaultWeights }
+  weights: { ...defaultWeights },
+  fppgCache: new Map()
 };
+
+function weightKey(weights) {
+  return Object.keys(weights)
+    .sort()
+    .map(k => `${k}:${weights[k]}`)
+    .join('|');
+}
+
+function cacheKey(id, season, weights) {
+  return `${id}|${season}|${weightKey(weights)}`;
+}
+
+export function getCachedFPPG(id, season, weights) {
+  return state.fppgCache.get(cacheKey(id, season, weights));
+}
+
+export function setCachedFPPG(id, season, weights, val) {
+  state.fppgCache.set(cacheKey(id, season, weights), val);
+}
+
+export function memoFPPG(player, weights) {
+  const cached = getCachedFPPG(player.id, player.season, weights);
+  if (cached !== undefined) return cached;
+  const per = {
+    PTS: player.pts,
+    REB: player.reb,
+    AST: player.ast,
+    STL: player.stl,
+    BLK: player.blk,
+    TOV: player.tov,
+    '3PM': player.threepm,
+    FGM: player.fgm,
+    FGA: player.fga,
+    FTM: player.ftm,
+    FTA: player.fta
+  };
+  const val = fppg(per, weights);
+  setCachedFPPG(player.id, player.season, weights, val);
+  return val;
+}
 
 export function initState() {
   state.teamBudgets = Array(state.teamCount).fill(state.budgetPerTeam);
