@@ -34,6 +34,10 @@ nav button:hover {
   opacity: 0.85;
 }
 
+nav button.active {
+  background: var(--primary-color);
+}
+
 table {
   border-collapse: collapse;
   width: 100%;
