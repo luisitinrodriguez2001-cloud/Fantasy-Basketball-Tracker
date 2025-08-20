@@ -1,21 +1,20 @@
 import { state } from './state.js';
+import { overallReplacement } from './replacement.js';
 
 export function computeValues() {
-  computeValuesFor(state.players, state.undrafted, state.teamCount, state.budgetPerTeam, state.spent, state.teamBudgets);
-}
+  const undrafted = state.players.filter(p => state.undrafted.has(p.name));
+  if (undrafted.length === 0) return { replacement: 0, totalPAR: 0, budgetLeft: 0 };
 
-export function computeValuesFor(list, undraftedSet, tCount, bPerTeam, spentTotal, budgets) {
-  const remaining = list.filter(p => undraftedSet.has(p.name));
-  if (remaining.length === 0) return { replacement: 0, totalPAR: 0, budgetLeft: 0 };
-  const sorted = remaining.map(p => p.fppg).sort((a, b) => b - a);
-  const index = Math.min(129, sorted.length - 1);
-  const replacement = sorted[index];
-  remaining.forEach(p => { p.par = Math.max(0, p.fppg - replacement); });
-  const totalPAR = remaining.reduce((sum, p) => sum + Math.max(0, p.par), 0);
-  const budgetLeft = budgets ? budgets.reduce((a, b) => a + b, 0)
-    : tCount * bPerTeam - spentTotal;
-  remaining.forEach(p => {
-    p.value = totalPAR > 0 ? budgetLeft * (Math.max(0, p.par) / totalPAR) : 0;
+  const slots = state.rosterSettings || {};
+  const startersTotal = Object.keys(slots)
+    .reduce((s, k) => s + state.teamCount * (slots[k] ?? 0), 0);
+  const replacement = overallReplacement(undrafted, startersTotal);
+
+  undrafted.forEach(p => { p.par = Math.max(0, p.fppg - replacement); });
+  const totalPAR = undrafted.reduce((sum, p) => sum + p.par, 0);
+  const budgetLeft = state.teamBudgets.reduce((a, b) => a + b, 0);
+  undrafted.forEach(p => {
+    p.value = totalPAR > 0 ? budgetLeft * (p.par / totalPAR) : 0;
   });
   return { replacement, totalPAR, budgetLeft };
 }
