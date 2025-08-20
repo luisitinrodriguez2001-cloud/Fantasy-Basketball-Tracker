@@ -20,7 +20,14 @@
         <label>Budget per Team: <input id="budget" type="number" value="200" min="1"/></label>
         <label>Season: <input id="season" type="number" value="2025" min="1900"/></label>
       </div>
-      <label>Team Names (comma separated): <input id="team-names" type="text" /></label>
+      <label style="display:none">Team Names: <input id="team-names" type="text" /></label>
+      <div id="team-name-controls">
+        <label><input id="change-team-names" type="checkbox"/> Change team names</label>
+        <div id="team-name-editor" hidden>
+          <div id="team-name-fields"></div>
+          <button id="save-team-names">Save</button>
+        </div>
+      </div>
       <h3>Scoring Weights</h3>
       <div id="weights"></div>
       <button id="apply">Apply Settings</button>

@@ -79,8 +79,8 @@ function ensureTeamIndex() {
 
 function gamesThisWeek(player) {
   const teamMap = ensureTeamIndex();
+  if (!teamMap || Object.keys(teamMap).length === 0) return '-';
   const dates = teamMap[player.team] || [];
-  // Placeholder: count of all games for now
   return dates.length;
 }
 

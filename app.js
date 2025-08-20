@@ -3,7 +3,7 @@ import { initTabs } from './modules/router.js';
 import { renderWeightInputs, populateFilters } from './modules/ui.js';
 import { renderProjections, initProjectionsTable } from './modules/table.js';
 import { renderDraft, renderRosters, setCalcWorker } from './modules/draft.js';
-import { fetchPlayers } from './modules/data-nbaapi.js';
+import { fetchPlayers, fetchSchedule } from './modules/data-nbaapi.js';
 
 async function loadPlayers(season, weights) {
   const players = await fetchPlayers(season);
@@ -38,9 +38,44 @@ if (typeof window !== 'undefined') {
     initTabs();
     renderWeightInputs();
     document.getElementById('team-names').value = state.teamNames.join(', ');
+
+    const changeNames = document.getElementById('change-team-names');
+    const editor = document.getElementById('team-name-editor');
+    const fields = document.getElementById('team-name-fields');
+    document.getElementById('save-team-names').addEventListener('click', () => {
+      const inputs = fields.querySelectorAll('input');
+      state.teamNames = Array.from(inputs).map((inp, i) => inp.value.trim() || `Team ${i + 1}`);
+      document.getElementById('team-names').value = state.teamNames.join(', ');
+      renderDraft();
+      renderRosters();
+      editor.hidden = true;
+      changeNames.checked = false;
+    });
+    changeNames.addEventListener('change', () => {
+      if (changeNames.checked) {
+        fields.innerHTML = '';
+        state.teamNames.forEach((n, i) => {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = n;
+          input.dataset.idx = i;
+          fields.appendChild(input);
+        });
+        editor.hidden = false;
+      } else {
+        editor.hidden = true;
+      }
+    });
+
     renderRosters();
     initProjectionsTable();
     state.players = await loadPlayers(state.season, state.weights);
+    try {
+      state.schedule = await fetchSchedule(state.season);
+    } catch (_) {
+      state.schedule = [];
+    }
+    state.teamDatesMap = undefined;
     state.undrafted = new Set(state.players.map(p => p.name));
     populateFilters(state.players, renderProjections);
     renderProjections();
@@ -82,6 +117,12 @@ if (typeof window !== 'undefined') {
       const seasonChanged = applySettingsFromDOM();
       if (seasonChanged) {
         state.players = await loadPlayers(state.season, state.weights);
+        try {
+          state.schedule = await fetchSchedule(state.season);
+        } catch (_) {
+          state.schedule = [];
+        }
+        state.teamDatesMap = undefined;
         state.undrafted = new Set(state.players.map(p => p.name));
       }
       populateFilters(state.players, renderProjections);
