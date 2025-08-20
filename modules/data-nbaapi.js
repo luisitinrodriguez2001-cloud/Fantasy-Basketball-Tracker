@@ -1,3 +1,5 @@
+import { calcFPPG } from './scoring.js';
+
 const NBA_API = 'https://api.server.nbaapi.com';
 
 export async function fetchTotals(season, pageSize = 5000) {
@@ -40,4 +42,42 @@ export function normalizePlayers(totals, advanced) {
       season: t.season
     };
   });
+}
+
+function mapApiPlayer(p) {
+  const g = p.games || 1;
+  return {
+    name: p.playerName,
+    team: p.team,
+    pos: p.position,
+    pts: p.points / g,
+    threepm: p.threeFg / g,
+    fga: p.fieldAttempts / g,
+    fgm: p.fieldGoals / g,
+    fta: p.ftAttempts / g,
+    ftm: p.ft / g,
+    reb: p.totalRb / g,
+    ast: p.assists / g,
+    stl: p.steals / g,
+    blk: p.blocks / g,
+    tov: p.turnovers / g
+  };
+}
+
+export async function loadPlayers(season, weights) {
+  try {
+    const apiUrl = `${NBA_API}/api/playertotals?season=${season}&pageSize=1000`;
+    const res = await fetch(apiUrl);
+    if (!res.ok) throw new Error('Network response was not ok');
+    const data = await res.json();
+    const players = Array.isArray(data.data) ? data.data.map(mapApiPlayer) : [];
+    players.forEach(p => { p.fppg = calcFPPG(p, weights); });
+    return players;
+  } catch (err) {
+    const res = await fetch('players.json');
+    const data = await res.json();
+    const players = Array.isArray(data) ? data : [];
+    players.forEach(p => { p.fppg = calcFPPG(p, weights); });
+    return players;
+  }
 }
