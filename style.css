@@ -1,7 +1,84 @@
-body { font-family: sans-serif; margin: 1rem; }
-nav { margin-bottom: 1rem; }
-nav button { margin-right: 0.5rem; }
-table { border-collapse: collapse; width: 100%; margin-top: 0.5rem; }
-th, td { border: 1px solid #ccc; padding: 0.25rem 0.5rem; text-align: left; }
-.row label { margin-right: 1rem; }
-.tab { margin-top: 1rem; }
+/* Theme variables */
+:root {
+  --bg-color: #f5f5f5;
+  --primary-color: #2c3e50;
+  --accent-color: #3498db;
+  --text-color: #2c3e50;
+  --table-stripe: #ecf0f1;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  margin: 0;
+  padding: 0 1rem;
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+nav {
+  background: var(--primary-color);
+  padding: 0.5rem;
+  margin: 0 -1rem 1rem;
+}
+
+nav button {
+  background: var(--accent-color);
+  border: none;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  margin-right: 0.5rem;
+  cursor: pointer;
+}
+
+nav button:hover {
+  opacity: 0.85;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 0.5rem;
+  background: #fff;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+th {
+  background: var(--primary-color);
+  color: #fff;
+  position: sticky;
+  top: 0;
+}
+
+tr:nth-child(even) {
+  background: var(--table-stripe);
+}
+
+.row label {
+  margin-right: 1rem;
+}
+
+.tab {
+  margin-top: 1rem;
+}
+
+.filters {
+  margin-top: 0.5rem;
+}
+
+.filters input,
+.filters select {
+  margin-right: 0.5rem;
+}
+
+#draft-table input[type='number'] {
+  width: 4rem;
+}
+
+.team-roster {
+  margin-bottom: 1rem;
+}

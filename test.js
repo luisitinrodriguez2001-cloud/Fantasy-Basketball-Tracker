@@ -21,16 +21,19 @@ if (fppg !== 2) {
   throw new Error(`calcFPPG failed, expected 2 got ${fppg}`);
 }
 
-// Test computeValuesFor
-const players = [
-  { name: 'A', fppg: 10 },
-  { name: 'B', fppg: 5 },
-];
-const undrafted = new Set(['A', 'B']);
+// Test computeValuesFor replacement logic
+const players = Array.from({ length: 140 }, (_, i) => ({ name: String(i), fppg: 140 - i }));
+const undrafted = new Set(players.map(p => p.name));
 const budgets = [100, 100];
-computeValuesFor(players, undrafted, 2, 100, 0, budgets);
-if (Math.round(players[0].value) !== 200 || Math.round(players[1].value) !== 0) {
-  throw new Error('computeValuesFor did not allocate budget correctly');
+const { replacement } = computeValuesFor(players, undrafted, 2, 100, 0, budgets);
+if (replacement !== players[129].fppg) {
+  throw new Error('Replacement player calculation failed');
+}
+if (players[0].par !== players[0].fppg - replacement) {
+  throw new Error('PAR not calculated correctly');
+}
+if (players[130].value !== 0) {
+  throw new Error('Replacement players should have zero value');
 }
 
 console.log('All tests passed');
