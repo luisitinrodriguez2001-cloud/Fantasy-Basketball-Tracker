@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Nikola Jokic",
+    "team": "DEN",
+    "pos": "C",
+    "pts": 25.1,
+    "reb": 11.0,
+    "ast": 9.8,
+    "stl": 1.2,
+    "blk": 0.7,
+    "tov": 3.5,
+    "fgm": 9.7,
+    "fga": 17.2,
+    "ftm": 5.2,
+    "fta": 6.4,
+    "threepm": 0.8
+  },
+  {
+    "name": "Luka Doncic",
+    "team": "DAL",
+    "pos": "PG",
+    "pts": 32.4,
+    "reb": 8.6,
+    "ast": 8.0,
+    "stl": 1.3,
+    "blk": 0.3,
+    "tov": 4.0,
+    "fgm": 10.7,
+    "fga": 21.5,
+    "ftm": 7.8,
+    "fta": 9.8,
+    "threepm": 3.4
+  },
+  {
+    "name": "Shai Gilgeous-Alexander",
+    "team": "OKC",
+    "pos": "SG",
+    "pts": 31.4,
+    "reb": 5.5,
+    "ast": 6.3,
+    "stl": 2.0,
+    "blk": 0.9,
+    "tov": 2.8,
+    "fgm": 10.1,
+    "fga": 20.0,
+    "ftm": 9.3,
+    "fta": 10.4,
+    "threepm": 1.1
+  }
+]
