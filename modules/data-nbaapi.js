@@ -31,17 +31,12 @@ export async function fetchTotals(season, pageSize = 5000) {
   return fetchEndpoint('playertotals', season, pageSize, 'points');
 }
 
-export async function fetchAdvanced(season, pageSize = 5000) {
-  return fetchEndpoint('playeradvancedstats', season, pageSize, 'win_shares');
-}
-
-export function normalizePlayers(totals, advanced) {
-  const advByPid = new Map(advanced.map(a => [a.playerId || a.playerName, a]));
+// Fetch player totals from the API and convert them to per-game stats
+export async function fetchPlayers(season, pageSize = 5000) {
+  const totals = await fetchTotals(season, pageSize);
   return totals.map(t => {
     const gp = Number(t.games ?? t.GP ?? 0) || 0;
     const safe = n => Number(n ?? 0);
-    const id = t.playerId || t.playerName;
-    const adv = advByPid.get(id) || {};
     const per_game = {
       PTS: gp ? safe(t.points) / gp : 0,
       REB: gp ? safe(t.total_rb) / gp : 0,
@@ -58,19 +53,11 @@ export function normalizePlayers(totals, advanced) {
       GP: gp
     };
     return {
-      id,
+      id: t.playerId || t.playerName,
       name: t.playerName,
       team: t.team,
-      positions: Array.isArray(t.positions) ? t.positions : [t.position].filter(Boolean),
+      pos: t.position || '',
       per_game,
-      advanced: {
-        PER: adv.per,
-        TS: adv.tsPercent,
-        USG: adv.usagePercent,
-        WS: adv.winShares,
-        BPM: adv.box,
-        VORP: adv.vorp
-      },
       season: t.season
     };
   });
