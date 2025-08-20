@@ -21,9 +21,28 @@ export function computeValues(players, settings, market, replacement) {
     return feas.length ? Math.max(...feas.map(teamMaxBid)) : 0;
   };
 
+  // Scarcity multiplier & spend-curve normalization
+  const scarcityAdj = new Map();
+  par.forEach(x => {
+    const mult = x.p.scarce ? 1.07 : 1.00;
+    scarcityAdj.set(x.id, (now$.get(x.id) ?? 0) * mult);
+  });
+  const sumScarcity = Array.from(scarcityAdj.values()).reduce((s,v)=>s+v,0);
+  const scale = sumScarcity > 0 ? effectivePool / sumScarcity : 0;
+
+  const rec$ = new Map();
+  scarcityAdj.forEach((val, id) => {
+    rec$.set(id, val * scale);
+  });
+
   return undrafted.map(p => {
-    const scarcity = p.scarce ? 1.07 : 1.00;
-    const rec = Math.min((now$.get(p.id) ?? 0) * scarcity, maxCompetitorBidFor(p));
-    return { id:p.id, par: par.find(x=>x.id===p.id)?.val ?? 0, baseDollar: base$.get(p.id) ?? 0, nowDollar: now$.get(p.id) ?? 0, recommended: rec };
+    const rec = Math.min(rec$.get(p.id) ?? 0, maxCompetitorBidFor(p));
+    return {
+      id: p.id,
+      par: par.find(x=>x.id===p.id)?.val ?? 0,
+      baseDollar: base$.get(p.id) ?? 0,
+      nowDollar: now$.get(p.id) ?? 0,
+      recommended: rec
+    };
   });
 }

@@ -2,7 +2,7 @@ import { initState, state, applySettingsFromDOM, memoFPPG, setCachedFPPG } from 
 import { initTabs } from './modules/router.js';
 import { renderWeightInputs, populateFilters } from './modules/ui.js';
 import { renderProjections } from './modules/table.js';
-import { renderDraft, renderRosters } from './modules/draft.js';
+import { renderDraft, renderRosters, setCalcWorker } from './modules/draft.js';
 import { fetchTotals, fetchAdvanced, normalizePlayers } from './modules/data-nbaapi.js';
 
 async function loadPlayers(season, weights) {
@@ -50,6 +50,7 @@ if (typeof window !== 'undefined') {
     renderDraft();
 
     const worker = new Worker(new URL('./modules/workers/calc.worker.js', import.meta.url), { type: 'module' });
+    setCalcWorker(worker);
 
     let weightTimer;
     function scheduleWeights() {
