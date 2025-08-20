@@ -1,7 +1,7 @@
 import { initState, state, applySettingsFromDOM, memoFPPG, setCachedFPPG } from './modules/state.js';
 import { initTabs } from './modules/router.js';
 import { renderWeightInputs, populateFilters } from './modules/ui.js';
-import { renderProjections } from './modules/table.js';
+import { renderProjections, initProjectionsTable } from './modules/table.js';
 import { renderDraft, renderRosters, setCalcWorker } from './modules/draft.js';
 import { fetchTotals, fetchAdvanced, normalizePlayers } from './modules/data-nbaapi.js';
 
@@ -43,6 +43,7 @@ if (typeof window !== 'undefined') {
     renderWeightInputs();
     document.getElementById('team-names').value = state.teamNames.join(', ');
     renderRosters();
+    initProjectionsTable();
     state.players = await loadPlayers(state.season, state.weights);
     state.undrafted = new Set(state.players.map(p => p.name));
     populateFilters(state.players, renderProjections);

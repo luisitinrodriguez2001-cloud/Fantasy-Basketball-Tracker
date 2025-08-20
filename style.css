@@ -75,6 +75,24 @@ tr:nth-child(even) {
   margin-right: 0.5rem;
 }
 
+.table-container {
+  height: 400px;
+  overflow-y: auto;
+}
+
+.expand-row.hidden {
+  display: none;
+}
+
+.expander {
+  cursor: pointer;
+}
+
+.sparkline {
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
 #draft-table input[type='number'] {
   width: 4rem;
 }
