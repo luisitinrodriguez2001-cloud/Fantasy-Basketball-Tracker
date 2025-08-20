@@ -8,33 +8,3 @@ export function fppg(perGame, w) {
     get('FTM') * (w.FTM ?? 0) + get('FTA') * (w.FTA ?? 0)
   );
 }
-
-export function calcFPPG(player, weights) {
-  const per = {
-    PTS: player.pts,
-    REB: player.reb,
-    AST: player.ast,
-    STL: player.stl,
-    BLK: player.blk,
-    TOV: player.tov,
-    '3PM': player.threepm,
-    FGM: player.fgm,
-    FGA: player.fga,
-    FTM: player.ftm,
-    FTA: player.fta
-  };
-  const w = {
-    PTS: weights.pts,
-    REB: weights.reb,
-    AST: weights.ast,
-    STL: weights.stl,
-    BLK: weights.blk,
-    TOV: weights.tov,
-    '3PM': weights.threepm,
-    FGM: weights.fgm,
-    FGA: weights.fga,
-    FTM: weights.ftm,
-    FTA: weights.fta
-  };
-  return fppg(per, w);
-}
