@@ -1,3 +1,5 @@
+import { normalizeFixtureJSON } from './schedule.js';
+
 const NBA_API = 'https://api.server.nbaapi.com';
 
 function seasonYear(season) {
@@ -35,21 +37,26 @@ export async function fetchTotals(season, pageSize = 5000) {
 export async function fetchPlayers(season, pageSize = 5000) {
   const totals = await fetchTotals(season, pageSize);
   return totals.map(t => {
-    const gp = Number(t.games ?? t.GP ?? 0) || 0;
-    const safe = n => Number(n ?? 0);
+    const val = (...keys) => {
+      for (const k of keys) {
+        if (t[k] !== undefined && t[k] !== null) return Number(t[k]);
+      }
+      return 0;
+    };
+    const gp = val('games', 'GP', 'gp', 'Games');
     const per_game = {
-      PTS: gp ? safe(t.points) / gp : 0,
-      REB: gp ? safe(t.total_rb) / gp : 0,
-      AST: gp ? safe(t.assists) / gp : 0,
-      STL: gp ? safe(t.steals) / gp : 0,
-      BLK: gp ? safe(t.blocks) / gp : 0,
-      TOV: gp ? safe(t.turnovers) / gp : 0,
-      '3PM': gp ? safe(t.three_fg) / gp : 0,
-      FGM: gp ? safe(t.fg) / gp : 0,
-      FGA: gp ? safe(t.fga) / gp : 0,
-      FTM: gp ? safe(t.ft) / gp : 0,
-      FTA: gp ? safe(t.fta) / gp : 0,
-      MIN: gp ? safe(t.minutes_pg ?? t.minutes_played) : 0,
+      PTS: gp ? val('points', 'PTS', 'pts') / gp : 0,
+      REB: gp ? val('total_rb', 'REB', 'rebounds', 'reb') / gp : 0,
+      AST: gp ? val('assists', 'AST', 'ast') / gp : 0,
+      STL: gp ? val('steals', 'STL', 'stl') / gp : 0,
+      BLK: gp ? val('blocks', 'BLK', 'blk') / gp : 0,
+      TOV: gp ? val('turnovers', 'TOV', 'tov') / gp : 0,
+      '3PM': gp ? val('three_fg', '3PM', 'threepm') / gp : 0,
+      FGM: gp ? val('fg', 'FGM') / gp : 0,
+      FGA: gp ? val('fga', 'FGA') / gp : 0,
+      FTM: gp ? val('ft', 'FTM') / gp : 0,
+      FTA: gp ? val('fta', 'FTA') / gp : 0,
+      MIN: gp ? val('minutes_pg', 'minutes_played', 'MIN') : 0,
       GP: gp
     };
     return {
@@ -61,4 +68,13 @@ export async function fetchPlayers(season, pageSize = 5000) {
       season: t.season
     };
   });
+}
+
+export async function fetchSchedule(season, pageSize = 5000) {
+  try {
+    const raw = await fetchEndpoint('schedule', season, pageSize, 'date');
+    return normalizeFixtureJSON(raw);
+  } catch (_) {
+    return [];
+  }
 }

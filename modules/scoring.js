@@ -1,10 +1,11 @@
 export function fppg(perGame, w) {
   if (!perGame) return 0;
   const get = k => Number(perGame[k] ?? 0);
+  const weight = k => Number(w[k] ?? w[k.toLowerCase()] ?? 0);
   return (
-    get('PTS') * (w.PTS ?? 0) + get('REB') * (w.REB ?? 0) + get('AST') * (w.AST ?? 0) +
-    get('STL') * (w.STL ?? 0) + get('BLK') * (w.BLK ?? 0) + get('TOV') * (w.TOV ?? 0) +
-    get('3PM') * (w['3PM'] ?? 0) + get('FGM') * (w.FGM ?? 0) + get('FGA') * (w.FGA ?? 0) +
-    get('FTM') * (w.FTM ?? 0) + get('FTA') * (w.FTA ?? 0)
+    get('PTS') * weight('PTS') + get('REB') * weight('REB') + get('AST') * weight('AST') +
+    get('STL') * weight('STL') + get('BLK') * weight('BLK') + get('TOV') * weight('TOV') +
+    get('3PM') * weight('3PM') + get('FGM') * weight('FGM') + get('FGA') * weight('FGA') +
+    get('FTM') * weight('FTM') + get('FTA') * weight('FTA')
   );
 }
