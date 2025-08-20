@@ -1,34 +1,82 @@
 import { state } from './state.js';
-import { overallReplacement } from './replacement.js';
+import { computeValues } from './valuations.js';
+import { hybridReplacement } from './replacement.js';
+import { tierPlayers } from './tiers.js';
 
-export function computeValues() {
-  const undrafted = state.players.filter(p => state.undrafted.has(p.name));
-  if (undrafted.length === 0) return { replacement: 0, totalPAR: 0, budgetLeft: 0 };
+let calcWorker;
+export function setCalcWorker(w) {
+  calcWorker = w;
+}
 
-  const slots = state.rosterSettings || {};
-  const startersTotal = Object.keys(slots)
-    .reduce((s, k) => s + state.teamCount * (slots[k] ?? 0), 0);
-  const replacement = overallReplacement(undrafted, startersTotal);
+function buildSettings() {
+  return { teams: state.teamCount, budget: state.budgetPerTeam, slots: state.rosterSettings || {} };
+}
 
-  undrafted.forEach(p => { p.par = Math.max(0, p.fppg - replacement); });
-  const totalPAR = undrafted.reduce((sum, p) => sum + p.par, 0);
-  const budgetLeft = state.teamBudgets.reduce((a, b) => a + b, 0);
-  undrafted.forEach(p => {
-    p.value = totalPAR > 0 ? budgetLeft * (p.par / totalPAR) : 0;
+const DEFAULT_SLOTS = 13;
+function buildMarket() {
+  const totalSlots = state.rosterSettings?.total ?? DEFAULT_SLOTS;
+  return {
+    teamStates: state.teamBudgets.map((budget, i) => ({
+      budget,
+      slotsOpen: Math.max(0, totalSlots - state.rosters[i].length),
+      canFit: () => true
+    }))
+  };
+}
+
+function recompute() {
+  const players = state.players.map(p => ({
+    id: p.id,
+    fppg: p.fppg,
+    eligible: [p.pos],
+    drafted: !state.undrafted.has(p.name),
+    scarce: p.scarce || false,
+    canFit: () => true
+  }));
+  const settings = buildSettings();
+  const market = buildMarket();
+  const replacement = hybridReplacement(players.filter(p => !p.drafted), settings);
+  const values = computeValues(players, settings, market, replacement);
+  const tierMap = tierPlayers(players.filter(p => !p.drafted));
+  values.forEach(v => {
+    const pl = state.players.find(sp => sp.id === v.id);
+    if (pl) {
+      pl.par = v.par;
+      pl.baseDollar = v.baseDollar;
+      pl.nowDollar = v.nowDollar;
+      pl.rec = v.recommended;
+      pl.tier = tierMap.get(v.id) || 0;
+    }
   });
-  return { replacement, totalPAR, budgetLeft };
+}
+
+export function draftPlayer(player, teamIndex, price) {
+  if (price > state.teamBudgets[teamIndex]) return;
+  state.teamBudgets[teamIndex] -= price;
+  state.spent += price;
+  state.undrafted.delete(player.name);
+  state.rosters[teamIndex].push({ player, price });
+  if (calcWorker) {
+    calcWorker.postMessage({ players: state.players, weights: state.weights });
+  }
+  recompute();
+  renderDraft();
+  renderRosters();
 }
 
 export function renderDraft() {
-  computeValues();
+  recompute();
   const tbody = document.querySelector('#draft-table tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
   state.players.filter(p => state.undrafted.has(p.name)).forEach(p => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${p.name}</td><td>${p.fppg.toFixed(1)}</td>` +
-      `<td>${p.par ? p.par.toFixed(1) : '0'}</td>` +
-      `<td>${p.value ? p.value.toFixed(1) : '0'}</td>`;
+    tr.innerHTML =
+      `<td>${p.name}</td><td>${p.fppg.toFixed(1)}</td>` +
+      `<td>${(p.par ?? 0).toFixed(1)}</td>` +
+      `<td>${(p.nowDollar ?? 0).toFixed(1)}</td>` +
+      `<td>${(p.rec ?? 0).toFixed(1)}</td>` +
+      `<td>${p.tier ?? ''}</td>`;
     const teamTd = document.createElement('td');
     const select = document.createElement('select');
     state.teamNames.forEach((name, idx) => {
@@ -44,7 +92,7 @@ export function renderDraft() {
     priceInput.type = 'number';
     priceInput.min = '0';
     priceInput.step = '0.1';
-    priceInput.value = p.value ? p.value.toFixed(1) : '0';
+    priceInput.value = (p.rec ?? 0).toFixed(1);
     priceTd.appendChild(priceInput);
     tr.appendChild(priceTd);
     const td = document.createElement('td');
@@ -54,31 +102,24 @@ export function renderDraft() {
       const teamIndex = parseInt(select.value, 10);
       const price = parseFloat(priceInput.value);
       if (!Number.isFinite(price) || price <= 0) return;
-      if (price > state.teamBudgets[teamIndex]) {
-        alert('Bid exceeds team budget');
-        return;
-      }
-      state.teamBudgets[teamIndex] -= price;
-      state.spent += price;
-      state.undrafted.delete(p.name);
-      state.rosters[teamIndex].push({ player: p, price });
-      renderDraft();
-      renderRosters();
+      draftPlayer(p, teamIndex, price);
     });
     td.appendChild(btn);
     tr.appendChild(td);
     tbody.appendChild(tr);
   });
   const budgetDiv = document.getElementById('budget-info');
-  const total = state.teamBudgets.reduce((a, b) => a + b, 0);
-  budgetDiv.innerHTML = `Total remaining budget: $${total.toFixed(1)}`;
-  const list = document.createElement('ul');
-  state.teamBudgets.forEach((b, i) => {
-    const li = document.createElement('li');
-    li.textContent = `${state.teamNames[i]}: $${b.toFixed(1)}`;
-    list.appendChild(li);
-  });
-  budgetDiv.appendChild(list);
+  if (budgetDiv) {
+    const total = state.teamBudgets.reduce((a, b) => a + b, 0);
+    budgetDiv.innerHTML = `Total remaining budget: $${total.toFixed(1)}`;
+    const list = document.createElement('ul');
+    state.teamBudgets.forEach((b, i) => {
+      const li = document.createElement('li');
+      li.textContent = `${state.teamNames[i]}: $${b.toFixed(1)}`;
+      list.appendChild(li);
+    });
+    budgetDiv.appendChild(list);
+  }
 }
 
 export function renderRosters() {
@@ -101,3 +142,4 @@ export function renderRosters() {
     container.appendChild(div);
   });
 }
+
