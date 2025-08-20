@@ -1,7 +1,8 @@
 {
   "name": "fantasy-basketball-tracker",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
-    "test": "node test.js"
+    "test": "node scoring.spec.js && node replacement.spec.js && node valuations.spec.js"
   }
 }
