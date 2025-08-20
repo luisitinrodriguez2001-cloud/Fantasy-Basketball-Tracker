@@ -1,33 +1,55 @@
-import { calcFPPG } from './scoring.js';
-
 const NBA_API = 'https://api.server.nbaapi.com';
 
+function seasonYear(season) {
+  if (typeof season === 'string' && season.includes('-')) {
+    const [start] = season.split('-');
+    const yr = parseInt(start, 10);
+    if (!Number.isNaN(yr)) return yr + 1;
+  }
+  return season;
+}
+
+async function fetchEndpoint(endpoint, season, pageSize, sortBy) {
+  const year = seasonYear(season);
+  const key = `${endpoint}_${year}`;
+  if (typeof localStorage !== 'undefined') {
+    const cached = localStorage.getItem(key);
+    if (cached) return JSON.parse(cached);
+  }
+  const url = `${NBA_API}/api/${endpoint}?season=${year}&page=1&pageSize=${pageSize}&ascending=false&sortBy=${sortBy}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${endpoint} fetch failed`);
+  const json = await res.json();
+  const data = json.data ?? json;
+  if (typeof localStorage !== 'undefined') {
+    try { localStorage.setItem(key, JSON.stringify(data)); } catch (_) {}
+  }
+  return data;
+}
+
 export async function fetchTotals(season, pageSize = 5000) {
-  const url = `${NBA_API}/api/playertotals?season=${season}&page=1&pageSize=${pageSize}&ascending=false&sortBy=points`;
-  const res = await fetch(url); if (!res.ok) throw new Error('Totals fetch failed');
-  const json = await res.json(); return json.data ?? json; // supports array fallback
+  return fetchEndpoint('playertotals', season, pageSize, 'points');
 }
 
 export async function fetchAdvanced(season, pageSize = 5000) {
-  const url = `${NBA_API}/api/playeradvancedstats?season=${season}&page=1&pageSize=${pageSize}&ascending=false&sortBy=win_shares`;
-  const res = await fetch(url); if (!res.ok) throw new Error('Advanced fetch failed');
-  const json = await res.json(); return json.data ?? json;
+  return fetchEndpoint('playeradvancedstats', season, pageSize, 'win_shares');
 }
 
 export function normalizePlayers(totals, advanced) {
   const advByPid = new Map(advanced.map(a => [a.playerId || a.playerName, a]));
   return totals.map(t => {
     const gp = Number(t.games ?? t.GP ?? 0) || 0;
-    const safe = (n) => Number(n ?? 0);
-    const id = t.playerId || t.playerName; // prefer stable id if present
-    const a = advByPid.get(id) || {};
+    const safe = n => Number(n ?? 0);
+    const id = t.playerId || t.playerName;
+    const adv = advByPid.get(id) || {};
     const per_game = {
       PTS: gp ? safe(t.points) / gp : 0,
       REB: gp ? safe(t.total_rb) / gp : 0,
       AST: gp ? safe(t.assists) / gp : 0,
       STL: gp ? safe(t.steals) / gp : 0,
       BLK: gp ? safe(t.blocks) / gp : 0,
-      3PM: gp ? safe(t.three_fg) / gp : 0,
+      TOV: gp ? safe(t.turnovers) / gp : 0,
+      '3PM': gp ? safe(t.three_fg) / gp : 0,
       FGM: gp ? safe(t.fg) / gp : 0,
       FGA: gp ? safe(t.fga) / gp : 0,
       FTM: gp ? safe(t.ft) / gp : 0,
@@ -36,48 +58,20 @@ export function normalizePlayers(totals, advanced) {
       GP: gp
     };
     return {
-      id, name: t.playerName, team: t.team, positions: [], // fill if available
+      id,
+      name: t.playerName,
+      team: t.team,
+      positions: Array.isArray(t.positions) ? t.positions : [t.position].filter(Boolean),
       per_game,
-      advanced: { PER: a.per, TS: a.tsPercent, USG: a.usagePercent, WS: a.winShares, BPM: a.box, VORP: a.vorp },
+      advanced: {
+        PER: adv.per,
+        TS: adv.tsPercent,
+        USG: adv.usagePercent,
+        WS: adv.winShares,
+        BPM: adv.box,
+        VORP: adv.vorp
+      },
       season: t.season
     };
   });
-}
-
-function mapApiPlayer(p) {
-  const g = p.games || 1;
-  return {
-    name: p.playerName,
-    team: p.team,
-    pos: p.position,
-    pts: p.points / g,
-    threepm: p.threeFg / g,
-    fga: p.fieldAttempts / g,
-    fgm: p.fieldGoals / g,
-    fta: p.ftAttempts / g,
-    ftm: p.ft / g,
-    reb: p.totalRb / g,
-    ast: p.assists / g,
-    stl: p.steals / g,
-    blk: p.blocks / g,
-    tov: p.turnovers / g
-  };
-}
-
-export async function loadPlayers(season, weights) {
-  try {
-    const apiUrl = `${NBA_API}/api/playertotals?season=${season}&pageSize=1000`;
-    const res = await fetch(apiUrl);
-    if (!res.ok) throw new Error('Network response was not ok');
-    const data = await res.json();
-    const players = Array.isArray(data.data) ? data.data.map(mapApiPlayer) : [];
-    players.forEach(p => { p.fppg = calcFPPG(p, weights); });
-    return players;
-  } catch (err) {
-    const res = await fetch('players.json');
-    const data = await res.json();
-    const players = Array.isArray(data) ? data : [];
-    players.forEach(p => { p.fppg = calcFPPG(p, weights); });
-    return players;
-  }
 }
